@@ -1,17 +1,21 @@
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import './App.css'
-import { UserProvider } from './context/UserContext'
-import Header from './components/Header'
-import Loging from './components/Login'
-import ContenidoPrivado from './components/ContenidoPrivado'
+import PostList from './pages/PostList'
+import Login from './pages/Login'
+import Register from './pages/Register'
+import CreatePost from './pages/CreatePost'
 
 function App() {
 
   return (
-    <UserProvider>
-      <Header />
-      <Loging />
-      <ContenidoPrivado />
-    </UserProvider>
+    <BrowserRouter>
+      <Routes>
+        <Route path='/' element={<PostList />}></Route>
+        <Route path='/login' element={<Login />}></Route>
+        <Route path='/register' element={<Register />}></Route>
+        <Route path='/create' element={<CreatePost />}></Route>
+      </Routes>
+    </BrowserRouter>
   )
 }
 
