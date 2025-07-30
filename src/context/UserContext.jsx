@@ -1,33 +1,29 @@
-import { createContext, useState, useContext, useEffect } from 'react';
+import { createContext, useContext, useState } from 'react';
 
 const UserContext = createContext();
 
-export function UserProvider({ children }){
-    const [user, setUser] = useState(null);
+export const UserProvider = ({ children }) => {
+  const [user, setUser] = useState(() => {
+    const stored = localStorage.getItem('user');
+    return stored ? JSON.parse(stored) : null;
+  });
 
-    useEffect(()=>{
-        const stored = localStorage.getItem('user');
-        if (stored) setUser(JSON.parse(stored));
-    },[])
+  const login = (userData) => {
+    setUser(userData);
+    localStorage.setItem('user', JSON.stringify(userData));
+  };
 
-    const login = (userData) =>{
-        localStorage.setItem('user', JSON.stringify(userData));
-        setUser(userData);
-    }
+  const logout = () => {
+    setUser(null);
+    localStorage.removeItem('user');
+  };
 
-    const logout = () =>{
-        localStorage.removeItem('user');
-        setUser(null);
-    }
-
-    return(
-        <UserContext.Provider value={{user,login,logout}}>
-            {children}
-        </UserContext.Provider>
-    )
-
-}
-
+  return (
+    <UserContext.Provider value={{ user, login, logout }}>
+      {children}
+    </UserContext.Provider>
+  );
+};
 
 // eslint-disable-next-line react-refresh/only-export-components
-export const useUser = () =>  useContext(UserContext);
+export const useUser = () => useContext(UserContext);
