@@ -1,142 +1,136 @@
 import { useEffect, useState } from 'react'
-import {
-  Container,
-  Card,
-  Button,
-  Row,
-  Col,
-  Form,
-  Spinner,
-  Alert,
-} from 'react-bootstrap'
-import { useForm } from 'react-hook-form'
-import { useUser } from '../context/UserContext'
 import client from '../api/client'
+import { useUser } from '../context/UserContext'
 
-const PostList = () => {
-  const { user, logout } = useUser()
+function PostList() {
+  const { user } = useUser()
   const [posts, setPosts] = useState([])
-  const [editingId, setEditingId] = useState(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
+  const [title, setTitle] = useState('')
+  const [content, setContent] = useState('')
+  const [editPostId, setEditPostId] = useState(null)
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    setValue,
-    // eslint-disable-next-line no-unused-vars
-    formState: { errors },
-  } = useForm()
+  useEffect(() => {
+    fetchPosts()
+  }, [])
 
   const fetchPosts = async () => {
     try {
-      setLoading(true)
       const res = await client.get('/post')
       setPosts(res.data.reverse())
-    // eslint-disable-next-line no-unused-vars
-    } catch (err) {
-      setError('Error al cargar publicaciones')
-    } finally {
-      setLoading(false)
+    } catch (error) {
+      console.error('Error al obtener posts:', error)
     }
   }
 
-  const onSubmit = async (data) => {
+  const handleCreate = async () => {
+    if (!title || !content) return
     try {
-      if (!user) return
-      if (editingId) {
-        await client.put(`/post/${editingId}`, data)
-        setEditingId(null)
-      } else {
-        await client.post('/post', { ...data, user_id: user._id })
-      }
-      reset()
+      await client.post('/post', {
+        title,
+        content,
+        user_id: user._id,
+      })
+      setTitle('')
+      setContent('')
       fetchPosts()
-      // eslint-disable-next-line no-unused-vars
-    } catch (err) {
-      setError('No se pudo guardar el post')
+    } catch (error) {
+      console.error('Error al crear post:', error)
     }
   }
 
-  const handleEdit = (post) => {
-    setValue('title', post.title)
-    setValue('content', post.content)
-    setEditingId(post._id)
+  const handleUpdate = async (id) => {
+    try {
+      await client.put(`/post/${id}`, {
+        title,
+        content,
+      })
+      setEditPostId(null)
+      setTitle('')
+      setContent('')
+      fetchPosts()
+    } catch (error) {
+      console.error('Error al actualizar post:', error)
+    }
   }
 
   const handleDelete = async (id) => {
     try {
       await client.delete(`/post/${id}`)
       fetchPosts()
-      // eslint-disable-next-line no-unused-vars
-    } catch (err) {
-      setError('No se pudo eliminar el post')
+    } catch (error) {
+      console.error('Error al eliminar post:', error)
     }
   }
 
-  useEffect(() => {
-    fetchPosts()
-  }, [])
-
-  if (!user) {
-    return (
-      <Container className="mt-5">
-        <Alert variant="warning">Debes iniciar sesión para ver los posts.</Alert>
-      </Container>
-    )
+  const startEdit = (post) => {
+    setEditPostId(post._id)
+    setTitle(post.title)
+    setContent(post.content)
   }
 
   return (
-    <Container className="mt-4">
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <h2>Publicaciones</h2>
-        <Button variant="outline-danger" onClick={logout}>
-          Cerrar sesión
-        </Button>
+    <div className="container py-4">
+      <h2 className="mb-4">Crear nueva publicación</h2>
+      <div className="mb-3">
+        <input
+          type="text"
+          className="form-control mb-2"
+          placeholder="Título"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+        />
+        <textarea
+          className="form-control mb-2"
+          placeholder="Contenido"
+          rows={4}
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+        />
+        {editPostId ? (
+          <button className="btn btn-warning" onClick={() => handleUpdate(editPostId)}>
+            Actualizar publicación
+          </button>
+        ) : (
+          <button className="btn btn-primary" onClick={handleCreate}>
+            Crear publicación
+          </button>
+        )}
       </div>
 
-      <Form onSubmit={handleSubmit(onSubmit)} className="mb-4">
-        <Row>
-          <Col md={4}>
-            <Form.Control
-              placeholder="Título"
-              {...register('title', { required: 'Requerido' })}
-              className="mb-2"
-            />
-          </Col>
-          <Col md={6}>
-            <Form.Control
-              placeholder="Contenido"
-              {...register('content', { required: 'Requerido' })}
-              className="mb-2"
-            />
-          </Col>
-          <Col md={2}>
-            <Button type="submit" className="w-100">
-              {editingId ? 'Actualizar' : 'Crear'}
-            </Button>
-          </Col>
-        </Row>
-      </Form>
+      <hr className="my-4" />
+      <h3 className="mb-3">Publicaciones</h3>
 
-      {loading ? (
-        <div className="text-center">
-          <Spinner animation="border" />
+      {posts.map((post) => (
+        <div className="card mb-3" key={post._id}>
+          <div className="card-body">
+            <h5 className="card-title">{post.title}</h5>
+            <p className="card-text">{post.content}</p>
+            <p className="card-text">
+              <small className="text-muted">
+                {new Date(post.created_at).toLocaleString()}
+              </small>
+            </p>
+
+            {post.user_id === user._id && (
+              <div className="d-flex gap-2">
+                <button
+                  className="btn btn-sm btn-outline-secondary"
+                  onClick={() => startEdit(post)}
+                >
+                  Editar
+                </button>
+                <button
+                  className="btn btn-sm btn-outline-danger"
+                  onClick={() => handleDelete(post._id)}
+                >
+                  Eliminar
+                </button>
+              </div>
+            )}
+          </div>
         </div>
-      ) : error ? (
-        <Alert variant="danger">{error}</Alert>
-      ) : (
-        posts.map((post) => (
-          <PostCard
-            key={post._id}
-            post={post}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-          />
-        ))
-      )}
-    </Container>
+      ))}
+    </div>
   )
 }
 

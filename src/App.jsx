@@ -7,7 +7,11 @@ import PostList from './pages/PostList'
 import PrivateRoute from './routes/PrivateRoute'
 
 function App() {
-  const { user } = useUser()
+  const { user, isLoading } = useUser()
+
+  if (isLoading) {
+    return <div className="text-center mt-5">Cargando sesión...</div>
+  }
 
   return (
     <Router>
@@ -16,9 +20,7 @@ function App() {
         <Route
           path="/"
           element={
-            <PrivateRoute>
-              <PostList />
-            </PrivateRoute>
+            user ? <PostList /> : <Navigate to="/login" />
           }
         />
         <Route
@@ -28,7 +30,7 @@ function App() {
         <Route
           path="/register"
           element={!user ? <Register /> : <Navigate to="/" />}
-        /> 
+        />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </Router>
