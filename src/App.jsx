@@ -1,21 +1,39 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import './App.css'
-import PostList from './pages/PostList'
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { useUser } from './context/UserContext'
+import Header from './components/Header'
 import Login from './pages/Login'
 import Register from './pages/Register'
-import CreatePost from './pages/CreatePost'
+import PostList from './pages/PostList'
+import PrivateRoute from './routes/PrivateRoute'
 
 function App() {
+  const { user, isLoading } = useUser()
+
+  if (isLoading) {
+    return <div className="text-center mt-5">Cargando sesión...</div>
+  }
 
   return (
-    <BrowserRouter>
+    <Router>
+      <Header />
       <Routes>
-        <Route path='/' element={<PostList />}></Route>
-        <Route path='/login' element={<Login />}></Route>
-        <Route path='/register' element={<Register />}></Route>
-        <Route path='/create' element={<CreatePost />}></Route>
+        <Route
+          path="/"
+          element={
+            user ? <PostList /> : <Navigate to="/login" />
+          }
+        />
+        <Route
+          path="/login"
+          element={!user ? <Login /> : <Navigate to="/" />}
+        />
+        <Route
+          path="/register"
+          element={!user ? <Register /> : <Navigate to="/" />}
+        />
+        <Route path="*" element={<Navigate to="/" />} />
       </Routes>
-    </BrowserRouter>
+    </Router>
   )
 }
 
